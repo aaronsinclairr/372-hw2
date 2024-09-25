@@ -1,12 +1,7 @@
 ---
-title: "plan372-hw2-aaron"
-format: html
+title: "plan372_hw2"
+format: pdf
 editor: visual
----
-```{r}
-library(tidyverse)
-
-```
 ---
 
 ## Quarto
@@ -32,5 +27,173 @@ The `echo: false` option disables the printing of code (only output is displayed
 
 ```{r}
 library(tidyverse)
+library(lubridate)
+library(ggthemes)
+```
+
+```{r}
+data = read_csv(here::here("restaurant_inspections.csv")
+                )
+  mean(data$SCORE)
+```
+
+```{r}
+head(data)
+```
+
+```{r}
+#I am using the geom_histogram function to create a frequency chart for scores
+ggplot(data, aes(x = SCORE)) +
+
+ geom_histogram()
+```
+
+```{r}
+#I am converting data set into date format to better manipulate it graphically
+data$RESTAURANTOPENDATE <- as.Date(data$RESTAURANTOPENDATE)
+
+
+# creating line plot to visualize the trend
+ggplot(data, aes(x = RESTAURANTOPENDATE, y = SCORE)) +
+ geom_line()
+
+
+#In summary there does not appear to be a strong correlation between a restaurant's age and the score it recieves.
+```
+
+```{r}
+# Here I am cleaning the city names using str_to_upper. While <- was not used in class but I found it used in many resources online to assign data.
+
+data$CITY <- str_to_upper(data$CITY)
+
+# Recode city names to ensure consistent spelling
+data$CITY <- recode(data$CITY, 
+                    "RALEIGH" = "RALEIGH", 
+                    "CARY" = "CARY", 
+                    "APEX" = "APEX", 
+                    "HOLLY SPRINGS" = "HOLLY SPRINGS",
+                    "WENDELL" = "WENDELL",
+                    "ZEBULON" = "ZEBULON",
+                    "FUQUAY VARINA" = "FUQUAY VARINA",
+                    "OTHER CITY NAME" = "OTHER",
+                    .default = "OTHER") 
+
+# Here I am aggregating scores by city to find the average score by city 
+city_scores <- data |>
+  group_by(CITY) |>
+  summarise(AverageScore = mean(SCORE, na.rm = TRUE),
+            Count = n())
+
+# Here I make a bar chart for scores by city - used some more advanced techniques like prettier lables and color I found from online.
+ggplot(city_scores, aes(x = CITY, y = AverageScore)) +
+  geom_bar(stat = "identity", fill = "green", alpha = 0.7) +
+  labs(title = "Average Inspection Scores by City", x = "City", y = "Average Score") +
+  theme_minimal()
+
+
+#While the scales may be a little hard to read (not sure how to fix it or fit it better), there does not seem to be a wide variation in scores however Holly Springs seems to have a slight edge.
+```
+
+```{r}
+
+# Here for problem 5 I am aggregating scores by inspector. na.rm removes all that are "na" or not applicable. It essentially compiles each inspectors scores (group_by inspector... and then compares it with the average score on the other axis in the graph)
+
+inspector_scores <- data |>
+  group_by(INSPECTOR) |>
+  summarise(AverageScore = mean(SCORE, na.rm = TRUE),
+            Count = n())
+
+# Here I make another bar plot for scores by inspector using the AverageScore object made further back. 
+ggplot(inspector_scores, aes(x = AverageScore, y = INSPECTOR)) +
+  geom_bar(stat = "identity", fill = "purple", alpha = 0.7) +
+  labs(title = "Average Inspection Scores by Inspector", x = "Inspector", y = "Average Score") +
+  theme_minimal()
+
+
+#Fill essentially fills the bars up with color, something I found online. I also inverted the axes so that there is more space for the names to fit however it is still not perfect. Overall, the inspectors seem to be fairly consistent however Thomas Jumalon, the third name from the top has a significantly lower average score then the rest of them which may imply that he is more thurough. However, this is unlikely as only one inspector being that much more thurough than every single other one is unlikely. I think he just may be a harsher grader plain and simple. Mr. nitpick if you will.
+
 
 ```
+
+```{r}
+# Question 5 - I feel that not all the answers have that many extreme outliers. However, the ones that do like the first and second questions may be a result of poor graphic coding (the second graph im not sure why there is such a spike for newly opened restaurants). In general I feel that there is enough data to have fairly accurate results.
+```
+
+```{r}
+# For this one I compare scores by facility type.
+facility_scores <- data |>
+  group_by(FACILITYTYPE) |>
+  summarise(AverageScore = mean(SCORE, na.rm = TRUE),
+            Count = n())
+
+# Bar plot for scores by facility type
+ggplot(facility_scores, aes(x = AverageScore, y = FACILITYTYPE)) +
+  geom_bar(stat = "identity", fill = "cyan", alpha = 0.7) +
+  labs(title = "Average Inspection Scores by Facility Type", x = "Facility Type", y = "Average Score") +
+  theme_minimal()
+#Note - Theme_minimal generates a standard GGPLOT graph.
+
+
+#As visible in the graph below restaurants actually have a slightly lower average score (one of the lowest, in fact) compared to elderly nutrition sites or public school lunchrooms, which interestingly even with lower funding seem to have a higher grade by a bit compared to private schools.
+```
+
+
+```{r}
+# First for this last question I will filter for restaurants only
+restaurant_data <- data |> filter(FACILITYTYPE == "Restaurant")
+
+
+# Here I look at only inspection scores for restaurants in this histogram.
+ggplot(restaurant_data, aes(x = SCORE)) +
+  geom_histogram(binwidth = 2, fill = "blue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Restaurant Inspection Scores", x = "Score", y = "Count") +
+  theme_minimal()
+
+
+```
+
+```{r}
+restaurant_data$RestaurantAge <- as.numeric(Sys.Date() - restaurant_data$RESTAURANTOPENDATE) / 365
+ggplot(restaurant_data, aes(x = RestaurantAge, y = SCORE)) +
+  geom_line()
+
+#All of the analysis and code is essentially the same. Here its visible that in general newer restaurants may have a slightly lower score, or at least there are are more newer restaurants with lower scores than older ones.
+
+```
+
+```{r}
+#Restaurant scores by city
+restaurant_city_scores <- restaurant_data |>
+  group_by(CITY) |>
+  summarise(AverageScore = mean(SCORE, na.rm = TRUE),
+            Count = n())
+ggplot(restaurant_city_scores, aes(x = CITY, y = AverageScore)) +
+  geom_bar(stat = "identity", fill = "green", alpha = 0.7) +
+  labs(title = "Average Restaurant Inspection Scores by City", x = "City", y = "Average Score") +
+  theme_minimal()
+#Here as well restaurant scores seem to be pretty consistent throughout different cities.
+
+```
+
+```{r}
+
+#Same as further up - this time for average score by inspector.
+restaurant_inspector_scores <- restaurant_data |>
+  group_by(INSPECTOR) |>
+  summarise(AverageScore = mean(SCORE, na.rm = TRUE),
+            Count = n())
+ggplot(restaurant_inspector_scores, aes(x = AverageScore, y = INSPECTOR)) +
+  geom_bar(stat = "identity", fill = "purple", alpha = 0.7) +
+  labs(title = "Average Restaurant Inspection Scores by Inspector", x = "Inspector", y = "Average Score") +
+  theme_minimal()
+
+#Similarly here the inspector by the name of Thomas Jumalon has lower scores for specifically restaurants as well. Seems to be a harsher critic than most.
+
+
+```
+
+```{r}
+#I think there is a substantial amount of data and large enough sample sizes in almost all parts of this study. There are dozens of different inspectors, multiple cities, and loads of different establishments too. Perhaps instead of taking the averages of everything and just piping in raw data or displaying the data through different kinds of graphs in some circumstances may have given us a better or at least more accurate picture though.
+```
+
+
